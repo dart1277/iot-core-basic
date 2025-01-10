@@ -1,0 +1,29 @@
+services:
+  broker:
+    image: eclipse-mosquitto
+    container_name: broker
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./conf:/mosquitto/config
+      - ./data:/shared-data
+
+  pub:
+    image: eclipse-mosquitto
+    container_name: pub
+    entrypoint: ["sh", "-c", "sleep 3600"]
+    volumes:
+      - ./data:/shared-data
+
+  sub:
+    image: eclipse-mosquitto
+    container_name: sub
+    entrypoint: ["sh", "-c", "sleep 3600"]
+    volumes:
+      - ./data:/shared-data
+
+# docker exec -it pub sh
+# docker exec -it sub sh
+
+# mosquitto_pub -h broker -p 1883 -t /a/out/1 -m "Hello, World!"
+# mosquitto_sub -h broker -p 1883 -t /a/in/1

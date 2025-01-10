@@ -1,0 +1,153 @@
+p. 12 AWS IoT Core services (diagram)
+https://docs.aws.amazon.com/iot/latest/developerguide/aws-iot-how-it-works.html#aws-iot-core-services
+
+https://docs.aws.amazon.com/iot/latest/developerguide/protocols.html
+
+https://docs.aws.amazon.com/iot/latest/developerguide/reserved-topics.html
+
+https://docs.aws.amazon.com/iot/latest/developerguide/authorizing-direct-aws.html
+
+https://docs.aws.amazon.com/iot/latest/developerguide/iot-rules.html
+
+https://emqx.medium.com/advanced-features-of-mqtt-topics-11c342ed3f4a
+
+
+p. 34 tutorial
+
+aws_iot_thing
+
+aws_iot_policy
+
+aws_iot_certificate
+
+aws_iot_thing_principal_attachment
+
++ aws iot describe-endpoint --endpoint-type iot:Data-ATS (p. 137)
+
+p. 129
+
+aws iot create-thing --thing-name "DevCliTestThing"
+
+https://docs.aws.amazon.com/iot/latest/developerguide/iot-policy-actions.html
+policy example:
+
+{
+"Version": "2012-10-17",
+"Statement": [
+{
+"Effect": "Allow",
+"Action": [
+"iot:Publish",
+"iot:Subscribe",
+"iot:Receive",
+"iot:Connect"
+],
+"Resource": [
+"*"
+]
+}
+]
+}
+
+aws iot create-policy \
+--policy-name "DevCliTestThingPolicy" \
+--policy-document "file://~/policies/dev_cli_test_thing_policy.json"
+
+aws iot attach-policy \
+--policy-name "DevCliTestThingPolicy" \
+--target "certificateArn"
+
+aws iot attach-thing-principal \
+--thing-name "DevCliTestThing" \
+--principal "certificateArn"
+
+aws iot create-keys-and-certificate \
+--set-as-active \
+--certificate-pem-outfile "~/certs/pubsub/device.pem.crt" \
+--public-key-outfile "~/certs/pubsub/public.pem.key" \
+--private-key-outfile "~/certs/pubsub/private.pem.key"
+
+aws iot list-thing-principals --thing-name thing_name
+aws iot list-attached-policies --target certificate_ARN
+
+---
+Logging
+https://docs.aws.amazon.com/iot/latest/developerguide/configure-logging.html
+
+
+---
+
+aws iot list-jobs
+
+// response json
+osquitto_pub -h broker -p 1883 -t \$aws/things/MyTestDevice1/jobs/k3/update -m \
+'{ "status": "SUCCEEDED", "statusDetails": { "a": "b" }, "expectedVersion": "2", "executionNumber": 1, "includeJobExecutionState": true, "includeJobDocument": false, "stepTimeoutInMinutes": 60, "clientToken": "string4" }'
+
+mosquitto_sub -h broker -p 1883 -t \$aws/things/\+/jobs/#
+
+--- 
+commands
+
+ mosquitto_sub -h broker -p 1883 -t \$aws/commands/things/#
+
+$aws/commands/<devices>/<device-id>/executions/<executionId>/response/json
+
+https://docs.aws.amazon.com/iot/latest/developerguide/iot-remote-command-execution-start-monitor.html
+
+{
+  "deviceId": "My_Car",
+  "executionId": "07e4b780-7eca-4ffd-b772-b76358da5542",
+  "status": "FAILED",
+  "statusReason": {
+    "reasonCode": "CAR_LOW_ON_BATTERY",
+    "reasonDescription": "Car battery is lower than 5 percent"
+  }
+}
+
+---
+https://docs.aws.amazon.com/iot/latest/developerguide/iot-rule-actions.html
+
+aws_iot_topic_rule
+
++ lambda & aws_lambda_permission
+
+--- shadows
+https://docs.aws.amazon.com/iot/latest/developerguide/device-shadow-mqtt.html
+https://docs.aws.amazon.com/iot/latest/developerguide/using-device-shadows.html
+
+--- jobs
+
+https://docs.aws.amazon.com/iot/latest/developerguide/iot-jobs-lifecycle.html
+
+aws iot create-job \
+--job-id hello-world-job-1 \
+--document-source "job_document_url" \
+--targets "thing_arn" \
+--target-selection SNAPSHOT
+
+https://mosquitto.org/
+
+https://mosquitto.org/man/mosquitto_sub-1.html
+
+https://github.com/eclipse-mosquitto/mosquitto/blob/master/client/pub_client.c
+
+docker run -it -p 1883:1883 -v "$PWD/conf:/mosquitto/config" eclipse-mosquitto
+
+mosquitto_pub -h localhost -p 1883 -t /a/topic/1 -m "Hello, World!"
+mosquitto_sub -h localhost -p 1883 -t /a/topic/1
+
+---
+
+mosquitto_pub -h broker -p 1883 -t \$aws/things/MyTestDevice1/shadow/get -m ''
+mosquitto_sub -h broker -p 1883 -t \$aws/commands/things/#
+
+--- fleet indexing
+
+aws iot search-index --index-name "AWS_Things"  --query-string 'connectivity.connected:true'
+
+aws iot describe-index --index-name "AWS_Things"
+
+ aws iot get-statistics  --query-string 'thingName:MyTestDevice1'
+
+# field needs to be added in fleet indexing settings as a thing aggregation field
+ aws iot get-statistics --aggregation-field 'attributes.a1' --query-string '*'
